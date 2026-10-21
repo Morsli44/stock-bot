@@ -9,7 +9,7 @@ TOKEN = os.environ["BOT_TOKEN"]
 CHAT_ID = os.environ["CHAT_ID"]
 
 INTERVAL = 180   # ثانية (3 دقائق)
-ROUNDS = 10      # عدد مرات الفحص في كل تشغيل
+ROUNDS = 100     # 100 فحص = حوالي 5 ساعات
 
 
 def notify(text):
@@ -23,10 +23,14 @@ def notify(text):
         print("Telegram error:", e)
 
 
-def check(page):
-    page.goto(URL, wait_until="networkidle", timeout=60000)
-    page.wait_for_timeout(5000)
-    body = page.inner_text("body").upper()
+def check(browser):
+    page = browser.new_page()
+    try:
+        page.goto(URL, wait_until="networkidle", timeout=60000)
+        page.wait_for_timeout(5000)
+        body = page.inner_text("body").upper()
+    finally:
+        page.close()
     if "ORDER TOTAL" not in body:
         return None
     return "OUT OF STOCK" not in body
@@ -34,11 +38,10 @@ def check(page):
 
 with sync_playwright() as p:
     browser = p.chromium.launch()
-    page = browser.new_page()
     for i in range(ROUNDS):
         start = time.time()
         try:
-            state = check(page)
+            state = check(browser)
         except Exception as e:
             print("Error:", e)
             state = None
