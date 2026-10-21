@@ -1,15 +1,17 @@
 name: check-stock
 on:
   schedule:
-    - cron: "*/30 * * * *"
+    - cron: "13 * * * *"
   workflow_dispatch:
+permissions:
+  actions: write
 concurrency:
   group: stock-check
   cancel-in-progress: false
 jobs:
   check:
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 350
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -21,3 +23,8 @@ jobs:
         env:
           BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
           CHAT_ID: ${{ secrets.CHAT_ID }}
+      - name: Restart itself
+        if: always()
+        run: gh workflow run check.yml --repo ${{ github.repository }}
+        env:
+          GH_TOKEN: ${{ github.token }}
